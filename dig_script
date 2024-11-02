@@ -96,7 +96,7 @@ process_ip() {
     if [ $dig_exit_status -eq 9 ]; then
         # If not reachable (dig exit status 9)
         $v && echo "$ip: not reachable"
-        echo "%ip: not reachable" >> "$file_errors"
+        echo "$ip: not reachable" >> "$file_errors"
         return
     elif [ $dig_exit_status -ne 0 ]; then
         # If other error
