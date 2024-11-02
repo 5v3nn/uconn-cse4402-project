@@ -4,7 +4,7 @@
 
 # Function to display usage information
 usage() {
-    echo "Usage: $0 <data_file> [--domain <domain>] [--udp-only <file>] [--tcp-only <file>] [--both <file>]"
+    echo "Usage: $0 <data_file> [--domain <domain>] [--udp-only <file>] [--tcp-only <file>] [--both <file>] [--record-type <resource record>]"
     echo "  <data_file>         - Required: Path to the data file"
     echo "  --domain <domain>   - Optional: Domain to process (default: google.com)"
     echo "  --udp-only <file>   - Optional: File for UDP-only results (default: dig_udp_only.txt)"
@@ -13,6 +13,7 @@ usage() {
     echo "  --error <file>      - Optional: File for error results (default: dig_errors.txt)"
     echo "  -v                  - Optional: Verbose (default: not set)"
     echo "  -P <N>              - Optional: Processes to run in parallel (default: 1)"
+    echo "  --record-type                  - Optional: Resource Record Request (default: A)" 
     exit 1
 }
 
@@ -33,6 +34,7 @@ file_tcp_only="dig_tcp_only.txt"
 file_errors="dig_errors.txt"
 v=false
 processes=1
+record_type="A"
 
 # Parse optional arguments
 while [[ $# -gt 0 ]]; do
@@ -65,6 +67,10 @@ while [[ $# -gt 0 ]]; do
             processes="$2"
             shift 2
             ;;
+        --record-type) 
+            record_type="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
             usage
@@ -80,6 +86,7 @@ process_ip() {
     local file_tcp_only="$5"
     local file_errors="$6"
     local v="$7"
+    local record_type="$8"
 
     if [[ -z "$ip" ]]; then return; fi
 
@@ -106,8 +113,8 @@ process_ip() {
     fi
 
     # If reachable, test UDP and TCP
-    dig_udp=$(dig @"$ip" "$domain" +udp)
-    dig_tcp=$(dig @"$ip" "$domain" +tcp)
+    dig_udp=$(dig @"$ip" "$domain" +udp "$record_type" +ignore +tries=3 )
+    dig_tcp=$(dig @"$ip" "$domain" +tcp "$record_type" +ignore +tries=3)
     udp_success=false
     tcp_success=false
 
@@ -139,5 +146,5 @@ process_ip() {
 
 export -f process_ip
 
-cat "$file_data" | xargs -I {} -P "$processes" bash -c 'process_ip "$@"' _ {} "$domain" "$file_both" "$file_udp_only" "$file_tcp_only" "$file_errors" "$v"
+cat "$file_data" | xargs -I {} -P "$processes" bash -c 'process_ip "$@"' _ {} "$domain" "$file_both" "$file_udp_only" "$file_tcp_only" "$file_errors" "$v" "$record_type"
 
