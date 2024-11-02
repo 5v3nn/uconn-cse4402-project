@@ -11,6 +11,10 @@ Analyze the usage of TCP vs UDP for DNS queries.
 
 ## Running
 
+Note that for each new run, the cleanup (described below) is important!
+Otherwise, the new results will be added to the old results.
+
+
 ```bash
 ./dig_script ips.txt
 ./dig_analysis analysis.png
