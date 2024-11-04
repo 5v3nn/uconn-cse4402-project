@@ -80,7 +80,9 @@ nr_ips_udp_only=$(wc "$file_udp_only" | awk '{print $1}')
 nr_ips_tcp_only=$(wc "$file_tcp_only" | awk '{print $1}')
 nr_ips_erros=$(wc "$file_errors" | awk '{print $1}')
 nr_ips_not_reachable=$(grep "not reachable" "$file_errors" | wc | awk '{print $1}')
+nr_ips_refused=$(grep "REFUSED" "$file_errors" | wc | awk '{print $1}')
 nr_ips_other_errors=$(grep -V "not reachable" "$file_errors" | wc | awk '{print $1}')
+
 
 echo "Generate analysis file"
 echo "IPs,$nr_ips" > "$file_analysis"
@@ -88,6 +90,7 @@ echo "UDP and TCP,$nr_ips_both" >> "$file_analysis"
 echo "UDP,$nr_ips_udp_only" >> "$file_analysis"
 echo "TCP,$nr_ips_tcp_only" >> "$file_analysis"
 echo "not reachable,$nr_ips_not_reachable" >> "$file_analysis"
+echo "refused,$nr_ips_refused" >> "$file_analysis"
 echo "other errors,$nr_ips_other_errors" >> "$file_analysis"
 
 

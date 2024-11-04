@@ -112,6 +112,7 @@ process_ip() {
         return
     fi
 
+
     # If reachable, test UDP and TCP
     dig_udp=$(dig @"$ip" "$domain" +notcp "$record_type" +ignore +tries=3 )
     dig_tcp=$(dig @"$ip" "$domain" +tcp "$record_type" +ignore +tries=3)
