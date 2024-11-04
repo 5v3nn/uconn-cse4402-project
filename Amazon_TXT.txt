@@ -1,0 +1,7 @@
+IPs,24851
+UDP and TCP,16438
+UDP,1487
+TCP,971
+not reachable,1550
+refused,3593
+other errors,1
