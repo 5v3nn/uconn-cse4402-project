@@ -18,7 +18,23 @@ Otherwise, the new results will be added to the old results.
 ```bash
 ./dig_script ips.txt
 ./dig_analysis analysis.png
+./dig_udp_script
 ```
+
+
+We provided also a `./run` file, which coordinates the main steps in a proper
+way. You may run the script the following way. **Note** that for this to work
+we expect a `./data/` directory with a `ips.txt` file containing the IPs of
+nameservers to be analyzed. The script will create additional files needed to
+process the given `ips.txt` file in the same directory and at the end a image
+`{record}_analysis.png` is saved (in the same directory).
+
+```bash
+./run --domain amazon.com --dir ./data_amazon/
+```
+
+In this example call, we expect a file called `ips.txt` in the directory
+`./data_amazon/`.
 
 
 ## Advanced Run Options
@@ -42,9 +58,15 @@ IPs analyzed. They are futher broken down into "UDP and TCP", "UDP only", and
 "TCP only". Also interesting to see how many nameservers were not reachable,
 and if there were any other errors.
 
-
 ![example plot](./example_analysis.png)
 
+The second plot that is generated (upgrade.png) displays the amount of IPs that
+have been deemed as "UDP only" before, broken down into the number of IPs that
+returned the whole amazon.com TXT resource record (exceeds 3000 byte in size),
+that set the TC (truncated) flag and that returned information about their supported
+EDNS(0) buffer size.
+
+![example upgrade plot](./example_upgrade_analysis.png)
 
 ## Cleanup
 

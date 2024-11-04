@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+# output format: ip,has_answer,has_tc,has_edns,edns_buffer_size
+
+# Function to display usage information
+usage() {
+    echo "Usage: $0 [--input-file <file>] [--output-file <file>] [--image-name <file>]"
+    echo "  --input-file <file>   - Optional: File for input NS IPs (default: dig_udp_only.txt)"
+    echo "  --output-file <file>  - Optional: File to write results (default: dig_udp_upgrade.txt)"
+    echo "  --image-name <file>   - Optional: Name of image with results displayed (default: upgrade.png)"
+    exit 1
+}
+
+# Default values
+input_file="dig_udp_only.txt"
+output_file="dig_udp_upgrade.txt"
+image_name="upgrade.png"
+
+# Parse optional arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --input-file)
+            input_file="$2"
+            shift 2
+            ;;
+        --output-file)
+            output_file="$2"
+            shift 2
+            ;;
+        --image-name)
+            image_name="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+
+# Main logic
+process() {
+    echo "Remove ${output_file}"
+	rm -f "${output_file}"
+	while read -r ip
+	do
+		output=$(dig @${ip} amazon.com TXT +notcp +ignore +recurse +tries=3 +bufsize=5000)
+		has_answer=false
+		has_tc=false
+		has_edns=false
+		edns_number=0
+		if echo "${output}" | grep -q "ANSWER: 35"; then
+			has_answer=true
+		fi
+		if echo "${output}" | grep -q -E "flags\:[^\;]*tc[^\;]*\;"; then
+			has_tc=true
+		fi
+		if echo "${output}" | grep -q -E "udp:\s[0-9]+"; then
+			has_edns=true
+			edns_number=$(echo "${output}" | grep -o -E "udp\:\s[0-9]+" | sed 's/udp: //')
+		fi
+		echo "${ip},${has_answer},${has_tc},${has_edns},${edns_number}" >> "${output_file}"
+	done < ${input_file}
+
+}
+
+analyze() {
+	n_total=0
+	n_answer=0
+	n_tc=0
+	n_edns=0
+	upgrade_analysis="upgrade_analysis" # data file
+	while read -r line
+	do
+		((n_total++))
+		IFS=',' read -ra items <<< "$line"
+		if [ "${items[1]}" == "true" ]; then
+			((n_answer++))
+		fi
+		if [ "${items[2]}" == "true" ]; then
+			((n_tc++))
+		fi
+		if [ "${items[3]}" == "true" ]; then
+			((n_edns++))
+		fi
+		unset IFS
+	done < ${output_file}
+	echo "Number IPs,$n_total" > "$upgrade_analysis"
+	echo "Number answers received,$n_answer" >> "$upgrade_analysis"
+	echo "Number truncations,$n_tc" >> "$upgrade_analysis"
+	echo "Number EDNS specified,$n_edns" >> "$upgrade_analysis"
+
+	gnuplot -persist -c "plot.gp" "$image_name" "Upgrade Analysis" "$upgrade_analysis"
+}
+
+process
+analyze

@@ -96,3 +96,4 @@ echo "other errors,$nr_ips_other_errors" >> "$file_analysis"
 
 echo "Generate plot '$plot_title' and save to $image_name"
 gnuplot -persist -c "plot.gp" "$image_name" "$plot_title" "$file_analysis"
+
