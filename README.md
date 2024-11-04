@@ -22,6 +22,21 @@ Otherwise, the new results will be added to the old results.
 ```
 
 
+We provided also a `./run` file, which coordinates the main steps in a proper
+way. You may run the script the following way. **Note** that for this to work
+we expect a `./data/` directory with a `ips.txt` file containing the IPs of
+nameservers to be analyzed. The script will create additional files needed to
+process the given `ips.txt` file in the same directory and at the end a image
+`{record}_analysis.png` is saved (in the same directory).
+
+```bash
+./run --domain amazon.com --dir ./data_amazon/
+```
+
+In this example call, we expect a file called `ips.txt` in the directory
+`./data_amazon/`.
+
+
 ## Advanced Run Options
 
 - `./dig_script ips.txt -P 12`: If your `ips.txt` is really long, you can take

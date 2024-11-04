@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+
+###############################################################################
+#                  Main run script to get data and analyze it                 #
+###############################################################################
+
+# Arguments and variables #####################################################
+
+# Function to display usage information
+usage() {
+    echo "Usage: $0 [--domain <domain>] [--a <bool>] [--txt <bool>] [--collect <bool>] [--analysis <bool>] [--dir <file>]"
+    echo "  --domain <domain>   - Optional: Domain (default: google.com)"
+    echo "  --a <bool>          - Optional: Execute dig for A records (default: true)"
+    echo "  --txt <bool>        - Optional: Execute dig for TXT records (default: true)"
+    echo "  --collect <bool>    - Optional: Execute dig request part (default: true)"
+    echo "  --analysis <bool>   - Optional: Execute analysis part (default: true)"
+    echo "  --dir <file>        - Optional: Name of image with results displayed, needs to end with '/'! (default: ./data/)"
+    exit 1
+}
+
+# Default values
+domain="google.com"
+d="./data/"
+a=true
+txt=true
+collect=true
+analysis=true
+
+# Parse optional arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --domain)
+            domain="$2"
+            shift 2
+            ;;
+        --a)
+            a="$2"
+            shift 2
+            ;;
+        --txt)
+            txt="$2"
+            shift 2
+            ;;
+        --collect)
+            collect="$2"
+            shift 2
+            ;;
+        --analysis)
+            analysis="$2"
+            shift 2
+            ;;
+        --dir)
+            d="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+# General file paths
+ips_file="${d}ips.txt"
+dig_udp_file="dig_udp_only.txt"
+dig_tcp_file="dig_tcp_only.txt"
+dig_both_file="dig_both.txt"
+dig_errors_file="dig_errors.txt"
+analysis_file="analysis.txt"
+analysis_png="analysis.png"
+
+# Checks if directory or files exist
+[[ "${d: -1}" == "/" ]] || { echo "Error: Directory '$d' does not end with '/'."; exit 1; }
+[ -d "$d" ] || { echo "Error: Directory '$d' does not exist."; exit 1; }
+[ -f "$ips_file" ] || { echo "Error: File '$ips_file' does not exist."; exit 1; }
+
+
+# Functions ###################################################################
+
+process_records() {
+    local r="$1"                # record type
+    local udp_file="${d}${r}_${dig_udp_file}"
+    local tcp_file="${d}${r}_${dig_tcp_file}"
+    local both_file="${d}${r}_${dig_both_file}"
+    local errors_file="${d}${r}_${dig_errors_file}"
+
+    echo "Running dig for $domain $r ?"
+    ./dig_script "$ips_file" \
+                 --record-type "$r" \
+                 --domain "$domain" \
+                 --udp-only "$udp_file" \
+                 --tcp-only "$tcp_file" \
+                 --both "$both_file" \
+                 --error "$errors_file" \
+                 -P 10 -v
+}
+
+process_analyze() {
+    local r="$1"                # record type
+    local udp_file="${d}${r}_${dig_udp_file}"
+    local tcp_file="${d}${r}_${dig_tcp_file}"
+    local both_file="${d}${r}_${dig_both_file}"
+    local errors_file="${d}${r}_${dig_errors_file}"
+    local analysis_file="${d}${r}_${analysis_file}"
+    local analysis_png="${d}${r}_${analysis_png}"
+
+    echo "Analyze for '$domain' $r"
+    ./dig_analysis "$analysis_png" \
+                       --domain "${domain}" \
+                       --data "$ips_file" \
+                       --udp-only "$udp_file" \
+                       --tcp-only "$tcp_file" \
+                       --both "$both_file" \
+                       --error "$errors_file" \
+                       --analysis "$analysis_file"
+}
+
+# Main part ###################################################################
+
+## Collect main data part
+if [ "$collect" == "true" ]; then
+    if [ "$a" == "true" ]; then
+        process_records "A"
+    fi
+    if [ "$txt" == "true" ]; then
+        process_records "TXT"
+    fi
+fi
+
+## Analyze data part
+if [ "$analysis" == "true" ]; then
+    if [ "$a" == "true" ]; then
+        process_analyze "A"
+    fi
+    if [ "$txt" == "true" ]; then
+        process_analyze "TXT"
+    fi
+fi
