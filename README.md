@@ -18,6 +18,7 @@ Otherwise, the new results will be added to the old results.
 ```bash
 ./dig_script ips.txt
 ./dig_analysis analysis.png
+./dig_udp_script
 ```
 
 
@@ -42,9 +43,15 @@ IPs analyzed. They are futher broken down into "UDP and TCP", "UDP only", and
 "TCP only". Also interesting to see how many nameservers were not reachable,
 and if there were any other errors.
 
-
 ![example plot](./example_analysis.png)
 
+The second plot that is generated (upgrade.png) displays the amount of IPs that
+have been deemed as "UDP only" before, broken down into the number of IPs that
+returned the whole amazon.com TXT resource record (exceeds 3000 byte in size),
+that set the TC (truncated) flag and that returned information about their supported
+EDNS(0) buffer size.
+
+![example upgrade plot](./example_upgrade_analysis.png)
 
 ## Cleanup
 
