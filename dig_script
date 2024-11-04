@@ -13,7 +13,7 @@ usage() {
     echo "  --error <file>      - Optional: File for error results (default: dig_errors.txt)"
     echo "  -v                  - Optional: Verbose (default: not set)"
     echo "  -P <N>              - Optional: Processes to run in parallel (default: 1)"
-    echo "  --record-type                  - Optional: Resource Record Request (default: A)" 
+    echo "  --record-type        - Optional: Resource Record Request (default: A)"
     exit 1
 }
 
