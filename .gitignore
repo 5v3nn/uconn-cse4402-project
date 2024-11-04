@@ -1,4 +1,5 @@
 data/
 *.txt
+!results/*.txt
 .DS_Store
-results/
+raw-results/
