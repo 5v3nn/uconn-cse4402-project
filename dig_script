@@ -27,7 +27,7 @@ file_data="$1"
 shift 1
 
 # Default values for optional arguments
-domain="google.com"
+domain="amazon.com"
 file_both="dig_both.txt"
 file_udp_only="dig_udp_only.txt"
 file_tcp_only="dig_tcp_only.txt"
@@ -113,15 +113,15 @@ process_ip() {
     fi
 
     # If reachable, test UDP and TCP
-    dig_udp=$(dig @"$ip" "$domain" +udp "$record_type" +ignore +tries=3 )
+    dig_udp=$(dig @"$ip" "$domain" +notcp "$record_type" +ignore +tries=3 )
     dig_tcp=$(dig @"$ip" "$domain" +tcp "$record_type" +ignore +tries=3)
     udp_success=false
     tcp_success=false
 
-    if grep -q "(UDP)" <<< "$dig_udp"; then
+    if grep -q "status: NOERROR" <<< "$dig_udp"; then
         udp_success=true
     fi
-    if grep -q "(TCP)" <<< "$dig_tcp"; then
+    if grep -q "status: NOERROR" <<< "$dig_tcp"; then
         tcp_success=true
     fi
 
