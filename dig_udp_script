@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+# output format: ip,has_answer,has_tc,has_edns,edns_buffer_size
+
+process() {
+	input_file="dig_udp_only.txt"
+	output_file="dig_udp_upgrade.txt"
+	rm -f "${output_file}"
+	while read -r ip
+	do
+		output=$(dig @${ip} amazon.com TXT +notcp +ignore +recurse +tries=3 +bufsize=5000)
+		has_answer=false
+		has_tc=false
+		has_edns=false
+		edns_number=0
+		if echo "${output}" | grep -q "ANSWER: 35"; then
+			has_answer=true
+		fi
+		if echo "${output}" | grep -q -E "flags\:[^\;]*tc[^\;]*\;"; then
+			has_tc=true
+		fi
+		if echo "${output}" | grep -q -E "udp:\s[0-9]+"; then
+			has_edns=true
+			edns_number=$(echo "${output}" | grep -o -E "udp\:\s[0-9]+" | sed 's/udp: //')
+		fi
+		echo "${ip},${has_answer},${has_tc},${has_edns},${edns_number}" >> "${output_file}"
+	done < ${input_file}
+
+}
+
+analyze() {
+	n_total=0
+	n_answer=0
+	n_tc=0
+	n_edns=0
+	input_file="dig_udp_upgrade.txt"
+	upgrade_analysis="upgrade_analysis"
+	image_name="upgrade.png"
+	while read -r line
+	do
+		((n_total++))
+		IFS=',' read -ra items <<< "$line"
+		if [ "${items[1]}" == "true" ]; then
+			((n_answer++))
+		fi
+		if [ "${items[2]}" == "true" ]; then
+			((n_tc++))
+		fi
+		if [ "${items[3]}" == "true" ]; then
+			((n_edns++))
+		fi
+		unset IFS
+	done < ${input_file}
+	echo "Number IPs,$n_total" > "$upgrade_analysis"
+	echo "Number answers received,$n_answer" >> "$upgrade_analysis"
+	echo "Number truncations,$n_tc" >> "$upgrade_analysis"
+	echo "Number EDNS specified,$n_edns" >> "$upgrade_analysis"
+
+	gnuplot -persist -c "plot.gp" "$image_name" "Upgrade Analysis" "$upgrade_analysis"
+}
+
+process
+analyze
