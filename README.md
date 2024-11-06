@@ -78,5 +78,7 @@ rm -v dig_*.txt
 ``` 
 
 
+## Results 
 
+Results are discussed in the readme in the `./results` directory: [./results/README.md](./results/README.md). 
 
