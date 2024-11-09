@@ -60,6 +60,22 @@ and if there were any other errors.
 
 ![example plot](./resources/example_analysis.png)
 
+
+If the plot should be a comparison between three different resource record
+results, the following command can be used. Note that obviously the 3
+`./results/Amazon_*.txt` need to be of the same format.
+
+```bash
+gnuplot -persist -c "plot_comparison.gp" "./result/example_analysis_comparison.png" \
+  "NS Analysis of Amazon.com of A, ANY, TXT" \
+  "./results/Amazon_A.txt" "A" \
+  "./results/Amazon_ANY.txt" "ANY" \
+  "./results/Amazon_TXT.txt" "TXT"
+```
+
+![example comparison plot](./resources/example_analysis_comparison.png)
+
+
 The second plot that is generated (upgrade.png) displays the amount of IPs that
 have been deemed as "UDP only" before, broken down into the number of IPs that
 returned the whole amazon.com TXT resource record (exceeds 3000 byte in size),
@@ -80,5 +96,6 @@ rm -v dig_*.txt
 
 ## Results 
 
-Results are discussed in the readme in the `./results` directory: [./results/README.md](./results/README.md). 
+Results are discussed in the readme in the `./results` directory:
+[./results/README.md](./results/README.md).
 
