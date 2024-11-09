@@ -8,10 +8,11 @@
 
 # Function to display usage information
 usage() {
-    echo "Usage: $0 [--domain <domain>] [--a <bool>] [--txt <bool>] [--collect <bool>] [--analysis <bool>] [--dir <file>]"
+    echo "Usage: $0 [--domain <domain>] [--a <bool>] [--txt <bool>] [--any <bool>] [--collect <bool>] [--analysis <bool>] [--dir <file>]"
     echo "  --domain <domain>   - Optional: Domain (default: google.com)"
     echo "  --a <bool>          - Optional: Execute dig for A records (default: true)"
     echo "  --txt <bool>        - Optional: Execute dig for TXT records (default: true)"
+    echo "  --any <bool>        - Optional: Execute dig for ANY records (default: true)"
     echo "  --collect <bool>    - Optional: Execute dig request part (default: true)"
     echo "  --analysis <bool>   - Optional: Execute analysis part (default: true)"
     echo "  --dir <file>        - Optional: Name of image with results displayed, needs to end with '/'! (default: ./data/)"
@@ -23,6 +24,7 @@ domain="google.com"
 d="./data/"
 a=true
 txt=true
+any=true
 collect=true
 analysis=true
 
@@ -39,6 +41,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --txt)
             txt="$2"
+            shift 2
+            ;;
+        --any)
+            any="$2"
             shift 2
             ;;
         --collect)
@@ -125,6 +131,9 @@ if [ "$collect" == "true" ]; then
     if [ "$txt" == "true" ]; then
         process_records "TXT"
     fi
+    if [ "$any" == "true" ]; then
+        process_records "ANY"
+    fi
 fi
 
 ## Analyze data part
@@ -134,5 +143,8 @@ if [ "$analysis" == "true" ]; then
     fi
     if [ "$txt" == "true" ]; then
         process_analyze "TXT"
+    fi
+    if [ "$any" == "true" ]; then
+        process_analyze "ANY"
     fi
 fi
