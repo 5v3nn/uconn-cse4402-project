@@ -119,10 +119,10 @@ process_ip() {
     udp_success=false
     tcp_success=false
 
-    if grep -q "(UDP)" <<< "$dig_udp"; then
+    if grep -q "status: NOERROR" <<< "$dig_udp"; then
         udp_success=true
     fi
-    if grep -q "(TCP)" <<< "$dig_tcp"; then
+    if grep -q "status: NOERROR" <<< "$dig_tcp"; then
         tcp_success=true
     fi
 
