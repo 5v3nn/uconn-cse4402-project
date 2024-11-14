@@ -97,7 +97,7 @@ process_ip() {
     fi
 
     # Create a baseline
-    dig_output=$(dig @"$ip" "$domain" "$record_type")
+    dig_output=$(dig @"$ip" "$domain" "$record_type" +tries=3)
     dig_exit_status=$?
 
     if [ $dig_exit_status -eq 9 ]; then
