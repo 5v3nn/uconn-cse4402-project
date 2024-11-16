@@ -30,7 +30,7 @@ process() {
 		local nameserver=""
 		local nsip=""
 		# sleep for 1 second before dig command
-		sleep 1
+		sleep 0.1
 		local output=$(dig @1.1.1.1 "${domain}" NS)
 		local pattern="IN\s*NS\s*[^\s]+";
 		if echo "${output}" | grep -q -m 1 -P "${pattern}"; then
@@ -42,7 +42,7 @@ process() {
 		fi
 		# now search for ip-address of nameserver
 		# wait for 1 second before second dig command
-		sleep 1
+		sleep 0.1
 		output=$(dig @1.1.1.1 "${nameserver}" A)
 		pattern="IN\s*A\s*[^\s]+"
 		if echo "${output}" | grep -q -m 1 -P "$pattern"; then
