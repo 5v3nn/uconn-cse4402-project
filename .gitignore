@@ -3,3 +3,4 @@ data/
 !results/*.txt
 .DS_Store
 raw-results/
+amplification/
