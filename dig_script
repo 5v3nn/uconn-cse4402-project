@@ -27,7 +27,7 @@ file_data="$1"
 shift 1
 
 # Default values for optional arguments
-domain="google.com"
+domain="amazon.com"
 file_both="dig_both.txt"
 file_udp_only="dig_udp_only.txt"
 file_tcp_only="dig_tcp_only.txt"
