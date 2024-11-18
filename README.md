@@ -122,3 +122,14 @@ rm -v dig_*.txt
 Results are discussed in the readme in the `./results` directory:
 [./results/README.md](./results/README.md).
 
+
+## Licenses
+
+We use data for the top domains from [cloudflare](https://radar.cloudflare.com), in particular the [domain rankings](https://radar.cloudflare.com/domains). These are the files:
+[./domains/top-100.csv](./domains/top-100.csv)
+[./domains/top-200.csv](./domains/top-200.csv)
+[./domains/top-10000.csv](./domains/top-10000.csv)
+
+They have been accessed on 11/15/2024.
+They are made available under the [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) license.
+These three files have also been slightly modified, removing the first row of each CSV-file and removing the rank-column in the `top-100.csv` file.
