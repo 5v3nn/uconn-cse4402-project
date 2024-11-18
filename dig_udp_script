@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 
-# output format: ip,has_answer,has_tc,has_edns,edns_buffer_size
+# output format: ip,has_answer,has_tc,has_edns,edns_number,number_answers,has_msg_size,msg_size,msg_size_gt,msg_size_gt_512,error,udp_rcvd
 
 # Function to display usage information
 usage() {
     echo "Usage: $0 [--input-file <file>] [--output-file <file>] [--image-name <file>]"
-    echo "  --input-file <file>   - Optional: File for input NS IPs (default: dig_udp_only.txt)"
-    echo "  --output-file <file>  - Optional: File to write results (default: dig_udp_upgrade.txt)"
-    echo "  --image-name <file>   - Optional: Name of image with results displayed (default: upgrade.png)"
+    echo "  --input-file <file>   - Optional: File for input NS IPs (default: dig_udp_only.txt) in ./data/ folder"
+    echo "  --output-file <file>  - Optional: File-Suffix to write results (default: amplification.txt)"
+    echo "  --image-name <file>   - Optional: Name-Suffix of image with results displayed (default: amplification.png)"
     exit 1
 }
 
 # Default values
 input_file="dig_udp_only.txt"
-output_file="dig_udp_upgrade.txt"
-image_name="upgrade.png"
+output_file="amplification.csv"
+image_name="amplification.png"
+in_dir="data"
+out_dir="amplification"
 
 # Parse optional arguments
 while [[ $# -gt 0 ]]; do
@@ -38,39 +40,105 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+make_query() {
+	local ip="$1"
+	local domain="$2"
+	local rr="$3"
+	local edns="$4"
+	if [ $edns == "true" ]; then
+		echo "$(dig @${ip} ${domain} ${rr} +notcp +ignore +recurse +timeout=1 +tries=3 +bufsize=10000)"
+	else
+		echo "$(dig @${ip} ${domain} ${rr} +notcp +ignore +recurse +timeout=1 +tries=3 +noedns)"
+	fi
+}
 
-# Main logic
-process() {
-    echo "Remove ${output_file}"
-	rm -f "${output_file}"
-	while read -r ip
-	do
-		output=$(dig @${ip} amazon.com TXT +notcp +ignore +recurse +tries=3 +bufsize=5000)
-		has_answer=false
-		has_tc=false
-		has_edns=false
-		edns_number=0
-		if echo "${output}" | grep -q "ANSWER: 35"; then
-			has_answer=true
-		fi
-		if echo "${output}" | grep -q -E "flags\:[^\;]*tc[^\;]*\;"; then
-			has_tc=true
-		fi
-		if echo "${output}" | grep -q -E "udp:\s[0-9]+"; then
-			has_edns=true
-			edns_number=$(echo "${output}" | grep -o -E "udp\:\s[0-9]+" | sed 's/udp: //')
-		fi
-		echo "${ip},${has_answer},${has_tc},${has_edns},${edns_number}" >> "${output_file}"
-	done < ${input_file}
+process_ip() {
+	local ip="$1"
+	local domain="$2"
+	local rr="$3"
+	local edns="$4"
+	local output_prefix="$5"
+	local output_file="$6"
+	local out_dir="$7"
+	if [ -z "$domain" ]; then
+		# if domain is not given, query for amazon.com
+		local output=$(make_query "$ip" amazon.com "$rr" "$edns")
+	else
+		# query for domain
+		local output=$(make_query "$ip" "$domain" "$rr" "$edns")
+	fi
+	local has_answer=false
+	local number_answers=0
+	local has_tc=false
+	local has_edns=false
+	local edns_number=0
+	local has_msg_size=false
+	local msg_size=0
+	local msg_size_gt=false
+	local msg_size_gt_512=false
+	local error=true
+	local udp_rcvd=false
+	local pattern="ANSWER: [1-9][0-9]*"
+	if echo "${output}" | grep -q -E "$pattern"; then
+		has_answer=true
+		number_answers=$(echo "${output}" | grep -o -E "$pattern" | sed 's/ANSWER: //')
+	fi
+	if echo "${output}" | grep -q -E "flags\:[^\;]*tc[^\;]*\;"; then
+		has_tc=true
+	fi
+	pattern="udp\:\s[0-9]+"
+	if echo "${output}" | grep -q -E "$pattern"; then
+		has_edns=true
+		edns_number=$(echo "${output}" | grep -o -E "$pattern" | sed 's/udp: //')
+	fi
+	pattern="MSG SIZE  rcvd: [0-9]*"
+	if echo "${output}" | grep -q -E "$pattern"; then
+		has_msg_size=true
+		msg_size=$(echo "${output}" | grep -o -E "$pattern" | sed 's/MSG SIZE  rcvd: //')
+	fi
+	if (($msg_size > 1000)); then
+		msg_size_gt=true
+	fi
+	if (($msg_size > 512)); then
+		msg_size_gt_512=true
+	fi
+	if echo "${output}" | grep -q "status: NOERROR"; then
+		error=false
+	fi
+	if echo "${output}" | grep -q "(UDP)"; then
+		udp_rcvd=true
+	fi
+
+	echo "${ip},${has_answer},${has_tc},${has_edns},${edns_number},${number_answers},${has_msg_size},${msg_size},${msg_size_gt},${msg_size_gt_512},${error},${udp_rcvd}" >> "${out_dir}/${output_prefix}-${output_file}"
 
 }
 
-analyze() {
-	n_total=0
-	n_answer=0
-	n_tc=0
-	n_edns=0
-	upgrade_analysis="upgrade_analysis" # data file
+# Main logic
+process() {
+	local line="$1"
+	local output_file="$2"
+	local out_dir="$3"
+	local old="$IFS"
+	IFS=','
+	read -r ip domain <<< "$line"
+	IFS="$old"
+	process_ip "$ip" "$domain" "TXT" "true" "o-txt-edns" "$output_file" "$out_dir"
+	process_ip "$ip" "$domain" "TXT" "false" "o-txt-noedns" "$output_file" "$out_dir"
+	process_ip "$ip" "$domain" "ANY" "true" "o-any-edns" "$output_file" "$out_dir"
+	process_ip "$ip" "$domain" "ANY" "false" "o-any-noedns" "$output_file" "$out_dir"
+}
+
+analyzeConcrete() {
+	local output_prefix="$1"	
+	local n_total=0
+	local n_answer=0
+	local n_tc=0
+	local n_edns=0
+	local n_msg_gt=0
+	local n_msg_gt_512=0
+	local n_error=0
+	local n_udp_rcvd=0
+	local amplification_analysis="${output_prefix}-amplification_analysis.txt" # data file
 	while read -r line
 	do
 		((n_total++))
@@ -84,15 +152,49 @@ analyze() {
 		if [ "${items[3]}" == "true" ]; then
 			((n_edns++))
 		fi
-		unset IFS
-	done < ${output_file}
-	echo "Number IPs,$n_total" > "$upgrade_analysis"
-	echo "Number answers received,$n_answer" >> "$upgrade_analysis"
-	echo "Number truncations,$n_tc" >> "$upgrade_analysis"
-	echo "Number EDNS specified,$n_edns" >> "$upgrade_analysis"
+		if [ "${items[8]}" == "true" ]; then
+			((n_msg_gt++))
+		fi
+		if [ "${items[9]}" == "true" ]; then
+			((n_msg_gt_512++))
+		fi
+		if [ "${items[10]}" == "true" ]; then
+			((n_error++))
+		fi
+		if [ "${items[11]}" == "true" ]; then
+			((n_udp_rcvd++))
+		fi
 
-	gnuplot -persist -c "plot.gp" "$image_name" "Upgrade Analysis" "$upgrade_analysis"
+		unset IFS
+	done < "${out_dir}/${output_prefix}-${output_file}"
+	echo "IPs,$n_total" > "${out_dir}/$amplification_analysis"
+	echo "Answers received,$n_answer" >> "${out_dir}/$amplification_analysis"
+	echo "Truncations,$n_tc" >> "${out_dir}/$amplification_analysis"
+	echo "EDNS supported,$n_edns" >> "${out_dir}/$amplification_analysis"
+	echo "Message size > 512,${n_msg_gt_512}" >> "${out_dir}/$amplification_analysis"
+	echo "Message size > 1000,$n_msg_gt" >> "${out_dir}/$amplification_analysis"
+	echo "Error status,$n_error" >> "${out_dir}/$amplification_analysis"
+	echo "UDP received,$n_udp_rcvd" >> "${out_dir}/$amplification_analysis"
+
+	gnuplot -persist -c "plot.gp" "${out_dir}/${output_prefix}-${image_name}" "Upgrade Analysis" "${out_dir}/$amplification_analysis"
 }
 
-process
+analyze() {
+	analyzeConcrete "o-any-edns"
+	analyzeConcrete "o-any-noedns"
+	analyzeConcrete "o-txt-edns"
+	analyzeConcrete "o-txt-noedns"
+}
+export -f process
+export -f process_ip
+export -f make_query
+
+
+if [[ ! -d "$out_dir" ]]; then
+	# directory does not already exist, create it
+	mkdir "$out_dir"
+fi
+rm -f ${out_dir}/*
+cat "${in_dir}/$input_file" | xargs -I {} -P 8 bash -c 'process "$@"' _ {} "$output_file" "$out_dir"
+
 analyze

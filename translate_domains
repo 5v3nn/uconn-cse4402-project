@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# Input file should have the following format: CSV, first row rank, second row domain
+# This is the format of the CSV-files from Cloudflare.
+
+# Function do display usage information
+usage() {
+	echo "Usage: $0 <file>"
+	echo " <file>	- Required: File for input domains, located in ./domains/ folder"
+	exit 1
+}
+
+if [[ $# -lt 1 ]]; then
+	usage
+fi
+
+# Default values
+input_file="$1"
+if [[ ! -d "data" ]]; then
+	# if the data-folder does not exist yet, create it
+	mkdir "data"
+fi
+rm -f "data/translated-${input_file}"
+
+process() {
+	local index=0
+	while IFS=',' read -r domain p
+	do
+		echo -ne "\r                    \r$index"
+		local nameserver=""
+		local nsip=""
+		# sleep for 1 second before dig command
+		sleep 0.1
+		local output=$(dig @1.1.1.1 "${domain}" NS)
+		local pattern="IN\s*NS\s*[^\s]+";
+		if echo "${output}" | grep -q -m 1 -P "${pattern}"; then
+			# -m 1: only take first matching
+			nameserver=$(echo "$output" | grep -o -m 1 -P "${pattern}" | sed -E 's/IN\s*NS\s*//')
+		fi
+		if [ -z ${nameserver} ]; then
+			continue
+		fi
+		# now search for ip-address of nameserver
+		# wait for 1 second before second dig command
+		sleep 0.1
+		output=$(dig @1.1.1.1 "${nameserver}" A)
+		pattern="IN\s*A\s*[^\s]+"
+		if echo "${output}" | grep -q -m 1 -P "$pattern"; then
+			nsip=$(echo "$output" | grep -o -m 1 -P "$pattern" | sed -E 's/IN\s*A\s*//')
+		fi
+		echo "${nsip},${domain}" >> "data/translated-${input_file}"
+		((index++))
+	done < "domains/${input_file}"
+}
+
+process
