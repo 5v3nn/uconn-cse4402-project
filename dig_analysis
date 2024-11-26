@@ -81,7 +81,7 @@ nr_ips_tcp_only=$(wc "$file_tcp_only" | awk '{print $1}')
 nr_ips_erros=$(wc "$file_errors" | awk '{print $1}')
 nr_ips_not_reachable=$(grep "not reachable" "$file_errors" | wc | awk '{print $1}')
 nr_ips_refused=$(grep "REFUSED" "$file_errors" | wc | awk '{print $1}')
-nr_ips_other_errors=$(grep -V "not reachable" "$file_errors" | wc | awk '{print $1}')
+nr_ips_other_errors=$(grep -v -e "not reachable" -e "REFUSED" "$file_errors" | wc -l)
 
 
 echo "Generate analysis file"
