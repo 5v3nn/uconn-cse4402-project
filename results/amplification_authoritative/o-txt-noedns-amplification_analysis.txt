@@ -1,0 +1,8 @@
+IPs,9934
+Answers received,5507
+Truncations,2753
+EDNS supported,16
+Message size > 512,69
+Message size > 1000,23
+Error status,52
+UDP received,9891

@@ -4,3 +4,4 @@ data/
 .DS_Store
 raw-results/
 amplification/
+!results/amplification_authoritative/*.txt
